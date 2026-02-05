@@ -7,15 +7,15 @@ A complete setup for creating and serving Terraform providers in an airgapped (o
 ## Table of Contents
 
 - [Overview](#overview)
-- [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [How It Works](#how-it-works)
-- [Provider Mirroring](#provider-mirroring)
-- [Docker Network Setup](#docker-network-setup)
+- [Project Layout](#project-layout-important-paths)
+- [Quick Start](#quick-start-recommended-flow)
 - [Certificate Management](#certificate-management)
 - [Testing with tf-client](#testing-with-tf-client)
 - [Troubleshooting](#troubleshooting)
+- [Provider Mirroring Details](#provider-mirroring-details)
+- [Syncing Updates](#syncing-updates)
+- [Advanced Topics](#advanced-topics)
 
 ## Overview
 
@@ -119,6 +119,22 @@ docker run -it --rm --network tf-network -v $(pwd)/tf-client:/work -w /work tf-c
 
 Inside the container you can run `curl -v --cacert /usr/local/share/ca-certificates/tf-mirror.crt https://tf-mirror/` and `terraform init`/`plan`.
 
+**Enable verbose logging:**
+```bash
+docker run --rm \
+  --network tf-network \
+  -e TF_LOG=DEBUG \
+  -v $(pwd)/tf-client:/work \
+  -w /work \
+  tf-client \
+  init
+```
+
+**Check provider cache:**
+```bash
+docker exec tf-client find .terraform -type f -name "*.json"
+```
+
 ## Troubleshooting
 
 Common checks:
@@ -165,18 +181,17 @@ This updates `.terraform.lock.hcl` with checksums for the listed platforms. Comm
 - `dial tcp: lookup tf-mirror: no such host` — verify both containers use the `tf-network` network and the client resolves `tf-mirror`.
 - `Failed to download provider` — verify the provider/version exists under `terraform-providers/registry.terraform.io/hashicorp/` and the mirror was built with that content.
 
-## Provider mirroring details
+## Provider Mirroring Details
 
 Use `terraform providers mirror` to produce the `terraform-providers/` structure. Example:
 
-```bash
 ```bash
 openssl verify -CAfile mirror.crt mirror.crt
 ```
 
 The mirror layout follows Terraform's registry layout under `terraform-providers/registry.terraform.io/hashicorp/<provider>/<version>/`.
 
-## Syncing updates
+## Syncing Updates
 
 To update providers:
 
@@ -184,291 +199,7 @@ To update providers:
 2. Re-run the mirror script or `terraform providers mirror` to refresh `terraform-providers/`.
 3. Rebuild the `tf-mirror-server` image and restart `tf-mirror`.
 
-## Contributing
-
-To add a new provider or version:
-
-1. Add a directory with a `main.tf` that declares the required provider.
-2. Run the mirror script to download provider files.
-3. Rebuild the mirror server and test with `tf-client`.
-
-If you'd like, I can also add a short section documenting how to build a `tf-client-trusted` image used for producing multi-platform lockfiles.  
-
-
-**Test HTTPS connection:**
-```bash
-curl -v --cacert mirror.crt https://tf-mirror/
-```
-
-## Testing with tf-client
-
-### Simple Test: terraform init
-
-**Basic initialization test:**
-```bash
-docker run --rm \
-  --network tf-network \
-  -v $(pwd)/tf-client:/work \
-  -w /work \
-  tf-client \
-  init
-```
-
-**Expected output:**
-```
-Initializing the backend...
-Initializing provider plugins...
-- Finding hashicorp/aws version matching "5.100.0"...
-- Installing hashicorp/aws v5.100.0...
-- Installed hashicorp/aws v5.100.0 (...)
-
-Terraform has been successfully configured!
-```
-
-### Detailed Testing
-
-**Interactive session with shell access:**
-```bash
-docker run -it \
-  --network tf-network \
-  -v $(pwd)/tf-client:/work \
-  -w /work \
-  tf-client \
-  /bin/sh
-```
-
-**Inside the container, test:**
-```bash
-# View Terraform configuration
-cat terraform.rc
-
-# Test HTTPS connectivity to mirror
-curl -v https://tf-mirror/
-
-# Initialize Terraform
-terraform init
-
-# Validate configuration
-terraform validate
-
-# Display plan (read-only)
-terraform plan
-```
-
-### Debugging Provider Download
-
-**Enable verbose logging:**
-```bash
-docker run --rm \
-  --network tf-network \
-  -e TF_LOG=DEBUG \
-  -v $(pwd)/tf-client:/work \
-  -w /work \
-  tf-client \
-  init
-```
-
-**Check provider cache:**
-```bash
-docker exec tf-client find .terraform -type f -name "*.json"
-```
-
-**Verify mirror connectivity from client:**
-```bash
-docker exec tf-client curl -k -I https://tf-mirror/registry.terraform.io/hashicorp/aws/5.100.0.json
-```
-
-## Troubleshooting
-
-### Mirror Server Issues
-
-**Problem: Certificate validation fails**
-```
-ssl: certificate verify failed
-```
-
-**Solution:**
-1. Verify certificate was copied correctly:
-   ```bash
-   docker cp tf-mirror:/etc/nginx/certs/mirror.crt ./mirror.crt
-   ls -la mirror.crt
-   ```
-
-2. Rebuild the client:
-   ```bash
-   docker build -t tf-client ./tf-client
-   ```
-
-3. Verify certificate is installed:
-   ```bash
-   docker exec tf-client openssl x509 -in /usr/local/share/ca-certificates/tf-mirror.crt -text
-   ```
-
-**Problem: Cannot reach mirror server**
-```
-dial tcp: lookup tf-mirror: no such host
-```
-
-**Solution:**
-1. Verify both containers are on the same network:
-   ```bash
-   docker network inspect tf-network
-   ```
-
-2. Check if mirror container is running:
-   ```bash
-   docker ps | grep tf-mirror
-   ```
-
-3. Test connectivity:
-   ```bash
-   docker exec tf-client ping -c 1 tf-mirror
-   ```
-
-### Provider Download Issues
-
-**Problem: Provider version not found**
-```
-Failed to download provider hashicorp/aws v5.100.0
-```
-
-**Solution:**
-1. Verify provider is in mirror directory:
-   ```bash
-   ls terraform-providers/registry.terraform.io/hashicorp/aws/
-   ```
-
-2. Check if mirror script completed successfully:
-   ```bash
-   ./mirror-providers-mac.sh
-   ```
-
-3. Rebuild mirror server image:
-   ```bash
-   docker build --no-cache -t tf-mirror-server ./tf-mirror-server
-   ```
-
-**Problem: Mirroring script fails**
-```
-ERROR: mirror directory does not exist
-```
-
-**Solution:**
-1. Create the mirror directory:
-   ```bash
-   mkdir -p terraform-providers
-   ```
-
-2. Ensure script has correct permissions:
-   ```bash
-   chmod +x mirror-providers-*.sh
-   ```
-
-3. Verify you're in the correct directory:
-   ```bash
-   pwd  # Should be the repo root
-   ```
-
-### Lock file platform checksums
-
-**Warning:**
-
-```
-Incomplete lock file information for providers
-```
-
-Reason:
-
-- Terraform generated checksums only for the platform that ran `terraform init`.
-- If your trusted client container platform = `linux_arm64`, the lock file will contain only `linux_arm64` hashes.
-- If someone later runs the same configuration on `linux_amd64`, `darwin_arm64`, or `darwin_amd64`, Terraform will fail because checksums for those platforms are missing.
-
-This is expected when using mirrors or custom install methods because provider checksums are platform-specific.
-
-Generate a multi-platform lock file
-
-Run this once in your `tf-client` directory (using a trusted client container that can reach the mirror). The command adds checksums for each specified platform to `.terraform.lock.hcl`:
-
-```bash
-docker run --rm -it \
-  --network tf-network \
-  -v "$PWD/tf-client:/work" \
-  -w /work \
-  tf-client-trusted \
-  providers lock \
-  -platform=linux_amd64 \
-  -platform=linux_arm64 \
-  -platform=darwin_arm64
-```
-
-This updates `.terraform.lock.hcl` to include checksums for the listed platforms. Commit that file to version control so other platforms can verify provider downloads from the mirror.
-
-
-### Network Isolation Testing
-
-**Verify airgapped setup works:**
-```bash
-# Start mirror and client
-docker run -d --name tf-mirror --network tf-network tf-mirror-server
-docker run -d --name tf-client --network tf-network -v $(pwd)/tf-client:/work tf-client sleep 3600
-
-# Verify containers can't reach external internet
-docker exec tf-client curl -I https://registry.terraform.io/
-# Should timeout/fail
-
-# Verify they can reach each other
-docker exec tf-client curl -k https://tf-mirror/
-# Should succeed
-```
-
 ## Advanced Topics
-
-### Hosting Behind a Load Balancer
-
-The nginx mirror server can be deployed behind load balancers for HA:
-
-```yaml
-services:
-  tf-mirror-1:
-    build: ./tf-mirror-server
-    networks:
-      - tf-network
-
-  tf-mirror-2:
-    build: ./tf-mirror-server
-    networks:
-      - tf-network
-
-  haproxy:
-    image: haproxy:latest
-    networks:
-      - tf-network
-    ports:
-      - "443:443"
-    volumes:
-      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-```
-
-Point `terraform.rc` to the load balancer endpoint.
-
-### Syncing Updates
-
-To update providers to newer versions:
-
-```bash
-# Update provider versions in main.tf files
-vim aws/v5/main.tf  # Change version constraint
-
-# Re-run mirror script
-./mirror-providers-mac.sh
-
-# Rebuild mirror server
-docker build -t tf-mirror-server ./tf-mirror-server
-
-# Restart containers
-docker-compose down
-docker-compose up -d
-```
 
 ### Custom Provider Registry
 
@@ -482,23 +213,3 @@ To host non-HashiCorp providers:
 2. Add version metadata JSON files (following Terraform Registry API)
 
 3. Update `terraform.rc` to include the custom namespace
-
-## Contributing
-
-To add new providers or versions:
-
-1. Create a provider directory: `mkdir -p provider-name/version`
-2. Add a `main.tf` with provider requirements
-3. Run the mirror script
-4. Rebuild Docker images
-5. Test with tf-client
-
-## License
-
-This project is provided as-is for airgapped Terraform deployments.
-
-## References
-
-- [Terraform Provider Mirror Documentation](https://www.terraform.io/cli/commands/providers/mirror)
-- [Terraform CLI Configuration](https://www.terraform.io/cli/config)
-- [Terraform Network Mirror Provider Installation](https://www.terraform.io/cli/config/config-file#network_mirror)
