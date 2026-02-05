@@ -1,0 +1,161 @@
+# Terraform Provider Mirror (auto-generated)
+terraform-providers/
+
+# Terraform State & Lock Files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*.backup
+*.tfstate
+*.tfstate.backup
+
+# SSL/TLS Certificates (unless version controlled)
+*.crt
+*.key
+*.pem
+*.pfx
+*.p12
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.sublime-project
+*.sublime-workspace
+.vim/
+tags
+.editorconfig
+
+# Logs
+*.log
+logs/
+
+# Temporary Files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# Build Artifacts
+dist/
+build/
+bin/
+
+# Docker
+Dockerfile.dev
+docker-compose.override.yml
+.dockerignore
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+.env.backup
+
+# OS Files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python (if using Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node (if using Node.js)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Go (if using Go scripts)
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Bash
+*.bak
+*.swp
+
+# AWS/Cloud credentials (NEVER commit credentials)
+~/.aws/credentials
+~/.aws/config
+.aws/
+credentials
+.env.secrets
+
+# Terraform Cloud/Enterprise
+terraform.cloud
+.terraform.cloud
+
+# OS X
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Vendor directories
+vendor/
+
+# Cache directories
+cache/
+.cache/
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Compiled binaries
+/terraform-providers-mirror
+/mirror-builder
+
+# Test outputs
+test-results/
+coverage/
+
+# Local development overrides
+.local/
+.private/
+
+# CI/CD artifacts
+.github/workflows/temp/
+
+# Misc project files
+.projectile
+project.clj
