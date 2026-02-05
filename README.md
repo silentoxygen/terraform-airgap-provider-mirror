@@ -32,36 +32,6 @@ This project provides:
 - Reduced network bandwidth and faster provider initialization
 - Consistent provider versions across deployments
 
-## Project Structure
-# Airgapped Terraform Provider Mirror
-
-A focused repository for mirroring Terraform providers and serving them from an HTTPS-enabled local mirror for airgapped or restricted environments. The README below shows a minimal, robust workflow to create the mirror, start a secure server, and run a trusted client against it.
-
-## Contents
-
-- Overview
-- Prerequisites
-- Project layout
-- Quick start (mirror → server → client)
-- Certificate management
-- Testing and troubleshooting
-- Provider mirroring details
-- Syncing updates & contributing
-
-## Overview
-
-This project provides:
-
-- A local provider cache produced by `terraform providers mirror` stored in `terraform-providers/`
-- An HTTPS Nginx-based mirror image built from `tf-mirror-server/` that serves the cache
-- A `tf-client/` Docker image and test workspace that uses the mirror via `terraform.rc`
-
-Primary goals:
-
-- Allow Terraform to run in environments without external access
-- Ensure reproducible provider versions via a local registry and lock file
-- Provide a minimal, auditable workflow for extracting and trusting the mirror's certificate
-
 ## Prerequisites
 
 - Docker installed and working
