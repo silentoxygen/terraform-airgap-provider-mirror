@@ -33,10 +33,6 @@ This project provides:
 - Consistent provider versions across deployments
 
 ## Project Structure
-
-```
-.
-├── README.md                          # This file
 # Airgapped Terraform Provider Mirror
 
 A focused repository for mirroring Terraform providers and serving them from an HTTPS-enabled local mirror for airgapped or restricted environments. The README below shows a minimal, robust workflow to create the mirror, start a secure server, and run a trusted client against it.
